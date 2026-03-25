@@ -1,4 +1,4 @@
-# Simple and Interactive Trading Tool for Everspace 2 &trade #
+# Simple and Interactive Trading Tool for Everspace 2™ #
 
 ## Legal disclaimer ##
 This is a fan-made tool and is not affiliated with or endorsed by Rockfish Games.
