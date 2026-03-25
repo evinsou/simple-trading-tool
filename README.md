@@ -1,11 +1,11 @@
-# Simple Trading Tool #
+# Simple and Interactive Trading Tool for Everspace 2 &trade #
 
 ## Legal disclaimer ##
 This is a fan-made tool and is not affiliated with or endorsed by Rockfish Games.
 
 The included data used in this project was sourced from a community-maintained spreadsheet: [link](https://docs.google.com/spreadsheets/d/1YyLgweTgwgknipPphKcm_gd75iOOPRaCSiESU2Zwyow/edit?gid=0#gid=0).
 
-This project does not claim ownership of any game-related data, which remains the intellectual property of its respective owners. All rights to the original data and game content (e.g. locaition and commodity names) belong to their respective owners. This repository only licenses the code; no rights are granted over the game data. 
+This project does not claim ownership of any game-related data, which remains the intellectual property of its respective owners. All rights to the original data and game content (e.g. Everspace 2, locaition and commodity names) belong to their respective owners. This repository only licenses the code; no rights are granted over the game data. 
 The code in this repository is licensed under the MIT License.
 Data may be incomplete or outdated.
 
