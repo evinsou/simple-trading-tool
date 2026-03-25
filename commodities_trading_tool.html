@@ -1,0 +1,2906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Offline Data Explorer</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    textarea { width: 100%; height: 120px; }
+    button { margin-top: 10px; padding: 8px 12px; }
+  </style>
+</head>
+<body>
+
+<h2>Offline Data Explorer</h2>
+
+<br>
+<button onclick="reloadTable()">Load Table</button>
+
+<hr>
+
+<div id="filters">
+
+  <h3>Filter by System</h3>
+  <div id="systemFilters"></div>
+  <button onclick="resetSystems()">Reset Systems</button>
+
+  <h3>Filter by Product</h3>
+  <div id="productFilters"></div>
+  <button onclick="resetProducts()">Reset Products</button>
+
+</div>
+
+<hr>
+<table id="dataTable" class="display" style="width:100%"></table>
+
+<script>
+let activeSystems = new Set();
+let activeProducts = new Set();
+
+const systems = [
+        {
+            "id": 1,
+            "name": "Aethon"
+        },
+        {
+            "id": 2,
+            "name": "Ceto"
+        },
+        {
+            "id": 3,
+            "name": "Drake"
+        },
+        {
+            "id": 4,
+            "name": "Khaït Nebula"
+        },
+        {
+            "id": 5,
+            "name": "Khione"
+        },
+        {
+            "id": 6,
+            "name": "Union"
+        },
+        {
+            "id": 7,
+            "name": "Zharkov"
+        }
+];
+
+const shops = [
+        {
+            "id": 1,
+            "system_id": 2,
+            "name": "Ceto Orbit / Colonial Research Station"
+        },
+        {
+            "id": 2,
+            "system_id": 2,
+            "name": "Deep Fields / Siren's Sea (FD)"
+        },
+        {
+            "id": 3,
+            "system_id": 2,
+            "name": "G&B Mining Fields / Main Station"
+        },
+        {
+            "id": 4,
+            "system_id": 2,
+            "name": "G&B Mining Fields / Refinery"
+        },
+        {
+            "id": 5,
+            "system_id": 2,
+            "name": "G&B Mining Fields / Scrapyard"
+        },
+        {
+            "id": 6,
+            "system_id": 2,
+            "name": "G&B Mining Fields / Nepthys Plains"
+        },
+        {
+            "id": 7,
+            "system_id": 2,
+            "name": "Home Turf / Planetary Debris (FD)"
+        },
+        {
+            "id": 8,
+            "system_id": 2,
+            "name": "Home Turf / Union Bridge"
+        },
+        {
+            "id": 9,
+            "system_id": 3,
+            "name": "Alpha Draco Claim / Alpha Draco Claim II (FD)"
+        },
+        {
+            "id": 10,
+            "system_id": 3,
+            "name": "Terra Nova / Coalition HQ"
+        },
+        {
+            "id": 11,
+            "system_id": 3,
+            "name": "Terra Nova / Coalition Cargo Terminal"
+        },
+        {
+            "id": 12,
+            "system_id": 3,
+            "name": "Terra Nova / Coalition Outpost"
+        },
+        {
+            "id": 13,
+            "system_id": 4,
+            "name": "Athorian Reef / Athor Orbit (FD)"
+        },
+        {
+            "id": 14,
+            "system_id": 4,
+            "name": "Khaït Trench / Okrot Trading Station"
+        },
+        {
+            "id": 15,
+            "system_id": 4,
+            "name": "The Naught Side / Bri Bioplant"
+        },
+        {
+            "id": 16,
+            "system_id": 5,
+            "name": "Ice Fields / Zethes Research Station"
+        },
+        {
+            "id": 17,
+            "system_id": 6,
+            "name": "Archers Nave / Remote Settlement"
+        },
+        {
+            "id": 18,
+            "system_id": 6,
+            "name": "Ceto Supply Route / Ayres Relay Station"
+        },
+        {
+            "id": 19,
+            "system_id": 6,
+            "name": "Ceto Supply Route / Freelancer Outpost (FD)"
+        },
+        {
+            "id": 20,
+            "system_id": 6,
+            "name": "EMP Fields / Remote Station"
+        },
+        {
+            "id": 21,
+            "system_id": 6,
+            "name": "EMP Fields / Warship Remains"
+        },
+        {
+            "id": 22,
+            "system_id": 6,
+            "name": "Smugglers Wheel / Smuggler Base"
+        },
+        {
+            "id": 23,
+            "system_id": 6,
+            "name": "The Concession / Anandra Bishop Starport"
+        },
+        {
+            "id": 24,
+            "system_id": 6,
+            "name": "The Concession / Prescott Starbase"
+        },
+        {
+            "id": 25,
+            "system_id": 6,
+            "name": "The Concession / Kato Palace"
+        },
+        {
+            "id": 26,
+            "system_id": 6,
+            "name": "The Concession / Black Market Dealer"
+        },
+        {
+            "id": 27,
+            "system_id": 6,
+            "name": "The Concession / Freelancer Hangar"
+        },
+        {
+            "id": 28,
+            "system_id": 6,
+            "name": "The Concession / G&B Office & Hangar"
+        },
+        {
+            "id": 29,
+            "system_id": 6,
+            "name": "Zharkov Border / Abandoned Transit Point (FD)"
+        },
+        {
+            "id": 30,
+            "system_id": 6,
+            "name": "Zharkov Supply Route / Zharkov Transit Forum"
+        },
+        {
+            "id": 31,
+            "system_id": 6,
+            "name": "Zharkov Supply Route / G&B Union Branch"
+        },
+        {
+            "id": 32,
+            "system_id": 7,
+            "name": "Dust Rim / Union Border Control"
+        },
+        {
+            "id": 33,
+            "system_id": 7,
+            "name": "Dust Rim / Remote Mining Station"
+        },
+        {
+            "id": 34,
+            "system_id": 7,
+            "name": "Eye of the Storm / Vesna Mining Station"
+        },
+        {
+            "id": 35,
+            "system_id": 7,
+            "name": "The Vortex / Devana Gas Orbit (FD)"
+        }
+];
+
+const categories = [
+        {
+            "id": 1,
+            "name": "Common",
+            "size": 50
+        },
+        {
+            "id": 2,
+            "name": "Uncommon",
+            "size": 20
+        },
+        {
+            "id": 3,
+            "name": "Rare",
+            "size": 10
+        },
+        {
+            "id": 4,
+            "name": "Superior",
+            "size": 5
+        }
+];
+
+const products = [
+        {
+            "id": 1,
+            "name": "Camdon Enzyme",
+            "category_id": 4
+        },
+        {
+            "id": 2,
+            "name": "Clothing",
+            "category_id": 1
+        },
+        {
+            "id": 3,
+            "name": "Cybernetic Implants",
+            "category_id": 3
+        },
+        {
+            "id": 4,
+            "name": "Earth Wine",
+            "category_id": 4
+        },
+        {
+            "id": 5,
+            "name": "Liquor",
+            "category_id": 1
+        },
+        {
+            "id": 6,
+            "name": "Medicine",
+            "category_id": 1
+        },
+        {
+            "id": 7,
+            "name": "Mining Equipment",
+            "category_id": 1
+        },
+        {
+            "id": 8,
+            "name": "Nano Fibers",
+            "category_id": 3
+        },
+        {
+            "id": 9,
+            "name": "Ramen",
+            "category_id": 1
+        },
+        {
+            "id": 10,
+            "name": "Seeds",
+            "category_id": 1
+        },
+        {
+            "id": 11,
+            "name": "Small Arms",
+            "category_id": 2
+        },
+        {
+            "id": 12,
+            "name": "Solar Panels",
+            "category_id": 2
+        }
+];
+
+const productShops = [
+{
+            "id": 1,
+            "product_id": 1,
+            "shop_id": 1,
+            "price": 868
+        },
+        {
+            "id": 2,
+            "product_id": 2,
+            "shop_id": 1,
+            "price": 59
+        },
+        {
+            "id": 3,
+            "product_id": 3,
+            "shop_id": 1,
+            "price": 270
+        },
+        {
+            "id": 4,
+            "product_id": 4,
+            "shop_id": 1,
+            "price": 805
+        },
+        {
+            "id": 5,
+            "product_id": 5,
+            "shop_id": 1,
+            "price": 36
+        },
+        {
+            "id": 6,
+            "product_id": 6,
+            "shop_id": 1,
+            "price": 49
+        },
+        {
+            "id": 7,
+            "product_id": 7,
+            "shop_id": 1,
+            "price": 74
+        },
+        {
+            "id": 8,
+            "product_id": 8,
+            "shop_id": 1,
+            "price": 372
+        },
+        {
+            "id": 9,
+            "product_id": 9,
+            "shop_id": 1,
+            "price": 22
+        },
+        {
+            "id": 10,
+            "product_id": 10,
+            "shop_id": 1,
+            "price": 34
+        },
+        {
+            "id": 11,
+            "product_id": 11,
+            "shop_id": 1,
+            "price": 130
+        },
+        {
+            "id": 12,
+            "product_id": 12,
+            "shop_id": 1,
+            "price": 160
+        },
+        {
+            "id": 13,
+            "product_id": 1,
+            "shop_id": 2,
+            "price": 883
+        },
+        {
+            "id": 14,
+            "product_id": 2,
+            "shop_id": 2,
+            "price": 60
+        },
+        {
+            "id": 15,
+            "product_id": 3,
+            "shop_id": 2,
+            "price": 277
+        },
+        {
+            "id": 16,
+            "product_id": 4,
+            "shop_id": 2,
+            "price": 822
+        },
+        {
+            "id": 17,
+            "product_id": 5,
+            "shop_id": 2,
+            "price": 37
+        },
+        {
+            "id": 18,
+            "product_id": 6,
+            "shop_id": 2,
+            "price": 49
+        },
+        {
+            "id": 19,
+            "product_id": 7,
+            "shop_id": 2,
+            "price": 75
+        },
+        {
+            "id": 20,
+            "product_id": 8,
+            "shop_id": 2,
+            "price": 389
+        },
+        {
+            "id": 21,
+            "product_id": 9,
+            "shop_id": 2,
+            "price": 23
+        },
+        {
+            "id": 22,
+            "product_id": 10,
+            "shop_id": 2,
+            "price": 37
+        },
+        {
+            "id": 23,
+            "product_id": 11,
+            "shop_id": 2,
+            "price": 134
+        },
+        {
+            "id": 24,
+            "product_id": 12,
+            "shop_id": 2,
+            "price": 167
+        },
+        {
+            "id": 25,
+            "product_id": 1,
+            "shop_id": 3,
+            "price": 808
+        },
+        {
+            "id": 26,
+            "product_id": 2,
+            "shop_id": 3,
+            "price": 59
+        },
+        {
+            "id": 27,
+            "product_id": 3,
+            "shop_id": 3,
+            "price": 298
+        },
+        {
+            "id": 28,
+            "product_id": 4,
+            "shop_id": 3,
+            "price": 749
+        },
+        {
+            "id": 29,
+            "product_id": 5,
+            "shop_id": 3,
+            "price": 34
+        },
+        {
+            "id": 30,
+            "product_id": 6,
+            "shop_id": 3,
+            "price": 50
+        },
+        {
+            "id": 31,
+            "product_id": 7,
+            "shop_id": 3,
+            "price": 70
+        },
+        {
+            "id": 32,
+            "product_id": 8,
+            "shop_id": 3,
+            "price": 331
+        },
+        {
+            "id": 33,
+            "product_id": 9,
+            "shop_id": 3,
+            "price": 20
+        },
+        {
+            "id": 34,
+            "product_id": 10,
+            "shop_id": 3,
+            "price": 32
+        },
+        {
+            "id": 35,
+            "product_id": 11,
+            "shop_id": 3,
+            "price": 119
+        },
+        {
+            "id": 36,
+            "product_id": 12,
+            "shop_id": 3,
+            "price": 154
+        },
+        {
+            "id": 37,
+            "product_id": 1,
+            "shop_id": 4,
+            "price": 808
+        },
+        {
+            "id": 38,
+            "product_id": 2,
+            "shop_id": 4,
+            "price": 59
+        },
+        {
+            "id": 39,
+            "product_id": 3,
+            "shop_id": 4,
+            "price": 298
+        },
+        {
+            "id": 40,
+            "product_id": 4,
+            "shop_id": 4,
+            "price": 749
+        },
+        {
+            "id": 41,
+            "product_id": 5,
+            "shop_id": 4,
+            "price": 34
+        },
+        {
+            "id": 42,
+            "product_id": 6,
+            "shop_id": 4,
+            "price": 50
+        },
+        {
+            "id": 43,
+            "product_id": 7,
+            "shop_id": 4,
+            "price": 70
+        },
+        {
+            "id": 44,
+            "product_id": 8,
+            "shop_id": 4,
+            "price": 331
+        },
+        {
+            "id": 45,
+            "product_id": 9,
+            "shop_id": 4,
+            "price": 20
+        },
+        {
+            "id": 46,
+            "product_id": 10,
+            "shop_id": 4,
+            "price": 32
+        },
+        {
+            "id": 47,
+            "product_id": 11,
+            "shop_id": 4,
+            "price": 119
+        },
+        {
+            "id": 48,
+            "product_id": 12,
+            "shop_id": 4,
+            "price": 154
+        },
+        {
+            "id": 49,
+            "product_id": 1,
+            "shop_id": 5,
+            "price": 854
+        },
+        {
+            "id": 50,
+            "product_id": 2,
+            "shop_id": 5,
+            "price": 60
+        },
+        {
+            "id": 51,
+            "product_id": 3,
+            "shop_id": 5,
+            "price": 298
+        },
+        {
+            "id": 52,
+            "product_id": 4,
+            "shop_id": 5,
+            "price": 797
+        },
+        {
+            "id": 53,
+            "product_id": 5,
+            "shop_id": 5,
+            "price": 37
+        },
+        {
+            "id": 54,
+            "product_id": 6,
+            "shop_id": 5,
+            "price": 51
+        },
+        {
+            "id": 55,
+            "product_id": 7,
+            "shop_id": 5,
+            "price": 71
+        },
+        {
+            "id": 56,
+            "product_id": 8,
+            "shop_id": 5,
+            "price": 337
+        },
+        {
+            "id": 57,
+            "product_id": 9,
+            "shop_id": 5,
+            "price": 23
+        },
+        {
+            "id": 58,
+            "product_id": 10,
+            "shop_id": 5,
+            "price": 32
+        },
+        {
+            "id": 59,
+            "product_id": 11,
+            "shop_id": 5,
+            "price": 129
+        },
+        {
+            "id": 60,
+            "product_id": 12,
+            "shop_id": 5,
+            "price": 150
+        },
+        {
+            "id": 61,
+            "product_id": 1,
+            "shop_id": 6,
+            "price": 855
+        },
+        {
+            "id": 62,
+            "product_id": 2,
+            "shop_id": 6,
+            "price": 60
+        },
+        {
+            "id": 63,
+            "product_id": 3,
+            "shop_id": 6,
+            "price": 298
+        },
+        {
+            "id": 64,
+            "product_id": 4,
+            "shop_id": 6,
+            "price": 798
+        },
+        {
+            "id": 65,
+            "product_id": 5,
+            "shop_id": 6,
+            "price": 37
+        },
+        {
+            "id": 66,
+            "product_id": 6,
+            "shop_id": 6,
+            "price": 53
+        },
+        {
+            "id": 67,
+            "product_id": 7,
+            "shop_id": 6,
+            "price": 71
+        },
+        {
+            "id": 68,
+            "product_id": 8,
+            "shop_id": 6,
+            "price": 337
+        },
+        {
+            "id": 69,
+            "product_id": 9,
+            "shop_id": 6,
+            "price": 23
+        },
+        {
+            "id": 70,
+            "product_id": 10,
+            "shop_id": 6,
+            "price": 32
+        },
+        {
+            "id": 71,
+            "product_id": 11,
+            "shop_id": 6,
+            "price": 129
+        },
+        {
+            "id": 72,
+            "product_id": 12,
+            "shop_id": 6,
+            "price": 150
+        },
+        {
+            "id": 73,
+            "product_id": 1,
+            "shop_id": 7,
+            "price": 775
+        },
+        {
+            "id": 74,
+            "product_id": 2,
+            "shop_id": 7,
+            "price": 54
+        },
+        {
+            "id": 75,
+            "product_id": 3,
+            "shop_id": 7,
+            "price": 305
+        },
+        {
+            "id": 76,
+            "product_id": 4,
+            "shop_id": 7,
+            "price": 714
+        },
+        {
+            "id": 77,
+            "product_id": 5,
+            "shop_id": 7,
+            "price": 31
+        },
+        {
+            "id": 78,
+            "product_id": 6,
+            "shop_id": 7,
+            "price": 44
+        },
+        {
+            "id": 79,
+            "product_id": 7,
+            "shop_id": 7,
+            "price": 71
+        },
+        {
+            "id": 80,
+            "product_id": 8,
+            "shop_id": 7,
+            "price": 365
+        },
+        {
+            "id": 81,
+            "product_id": 9,
+            "shop_id": 7,
+            "price": 18
+        },
+        {
+            "id": 82,
+            "product_id": 10,
+            "shop_id": 7,
+            "price": 34
+        },
+        {
+            "id": 83,
+            "product_id": 11,
+            "shop_id": 7,
+            "price": 112
+        },
+        {
+            "id": 84,
+            "product_id": 12,
+            "shop_id": 7,
+            "price": 172
+        },
+        {
+            "id": 85,
+            "product_id": 1,
+            "shop_id": 8,
+            "price": 778
+        },
+        {
+            "id": 86,
+            "product_id": 2,
+            "shop_id": 8,
+            "price": 56
+        },
+        {
+            "id": 87,
+            "product_id": 3,
+            "shop_id": 8,
+            "price": 303
+        },
+        {
+            "id": 88,
+            "product_id": 4,
+            "shop_id": 8,
+            "price": 716
+        },
+        {
+            "id": 89,
+            "product_id": 5,
+            "shop_id": 8,
+            "price": 33
+        },
+        {
+            "id": 90,
+            "product_id": 6,
+            "shop_id": 8,
+            "price": 49
+        },
+        {
+            "id": 91,
+            "product_id": 7,
+            "shop_id": 8,
+            "price": 70
+        },
+        {
+            "id": 92,
+            "product_id": 8,
+            "shop_id": 8,
+            "price": 334
+        },
+        {
+            "id": 93,
+            "product_id": 9,
+            "shop_id": 8,
+            "price": 19
+        },
+        {
+            "id": 94,
+            "product_id": 10,
+            "shop_id": 8,
+            "price": 32
+        },
+        {
+            "id": 95,
+            "product_id": 11,
+            "shop_id": 8,
+            "price": 113
+        },
+        {
+            "id": 96,
+            "product_id": 12,
+            "shop_id": 8,
+            "price": 161
+        },
+        {
+            "id": 97,
+            "product_id": 1,
+            "shop_id": 9,
+            "price": 634
+        },
+        {
+            "id": 98,
+            "product_id": 2,
+            "shop_id": 9,
+            "price": 51
+        },
+        {
+            "id": 99,
+            "product_id": 3,
+            "shop_id": 9,
+            "price": 450
+        },
+        {
+            "id": 100,
+            "product_id": 4,
+            "shop_id": 9,
+            "price": 739
+        },
+        {
+            "id": 101,
+            "product_id": 5,
+            "shop_id": 9,
+            "price": 28
+        },
+        {
+            "id": 102,
+            "product_id": 6,
+            "shop_id": 9,
+            "price": 36
+        },
+        {
+            "id": 103,
+            "product_id": 7,
+            "shop_id": 9,
+            "price": 72
+        },
+        {
+            "id": 104,
+            "product_id": 8,
+            "shop_id": 9,
+            "price": 454
+        },
+        {
+            "id": 105,
+            "product_id": 9,
+            "shop_id": 9,
+            "price": 13
+        },
+        {
+            "id": 106,
+            "product_id": 10,
+            "shop_id": 9,
+            "price": 44
+        },
+        {
+            "id": 107,
+            "product_id": 11,
+            "shop_id": 9,
+            "price": 97
+        },
+        {
+            "id": 108,
+            "product_id": 12,
+            "shop_id": 9,
+            "price": 234
+        },
+        {
+            "id": 109,
+            "product_id": 1,
+            "shop_id": 10,
+            "price": 777
+        },
+        {
+            "id": 110,
+            "product_id": 2,
+            "shop_id": 10,
+            "price": 54
+        },
+        {
+            "id": 111,
+            "product_id": 3,
+            "shop_id": 10,
+            "price": 401
+        },
+        {
+            "id": 112,
+            "product_id": 4,
+            "shop_id": 10,
+            "price": 789
+        },
+        {
+            "id": 113,
+            "product_id": 5,
+            "shop_id": 10,
+            "price": 31
+        },
+        {
+            "id": 114,
+            "product_id": 6,
+            "shop_id": 10,
+            "price": 33
+        },
+        {
+            "id": 115,
+            "product_id": 7,
+            "shop_id": 10,
+            "price": 77
+        },
+        {
+            "id": 116,
+            "product_id": 8,
+            "shop_id": 10,
+            "price": 458
+        },
+        {
+            "id": 117,
+            "product_id": 9,
+            "shop_id": 10,
+            "price": 17
+        },
+        {
+            "id": 118,
+            "product_id": 10,
+            "shop_id": 10,
+            "price": 44
+        },
+        {
+            "id": 119,
+            "product_id": 11,
+            "shop_id": 10,
+            "price": 116
+        },
+        {
+            "id": 120,
+            "product_id": 12,
+            "shop_id": 10,
+            "price": 216
+        },
+        {
+            "id": 121,
+            "product_id": 1,
+            "shop_id": 11,
+            "price": 767
+        },
+        {
+            "id": 122,
+            "product_id": 2,
+            "shop_id": 11,
+            "price": 55
+        },
+        {
+            "id": 123,
+            "product_id": 3,
+            "shop_id": 11,
+            "price": 435
+        },
+        {
+            "id": 124,
+            "product_id": 4,
+            "shop_id": 11,
+            "price": 823
+        },
+        {
+            "id": 125,
+            "product_id": 5,
+            "shop_id": 11,
+            "price": 32
+        },
+        {
+            "id": 126,
+            "product_id": 6,
+            "shop_id": 11,
+            "price": 30
+        },
+        {
+            "id": 127,
+            "product_id": 7,
+            "shop_id": 11,
+            "price": 77
+        },
+        {
+            "id": 128,
+            "product_id": 8,
+            "shop_id": 11,
+            "price": 483
+        },
+        {
+            "id": 129,
+            "product_id": 9,
+            "shop_id": 11,
+            "price": 17
+        },
+        {
+            "id": 130,
+            "product_id": 10,
+            "shop_id": 11,
+            "price": 47
+        },
+        {
+            "id": 131,
+            "product_id": 11,
+            "shop_id": 11,
+            "price": 118
+        },
+        {
+            "id": 132,
+            "product_id": 12,
+            "shop_id": 11,
+            "price": 230
+        },
+        {
+            "id": 133,
+            "product_id": 1,
+            "shop_id": 12,
+            "price": 801
+        },
+        {
+            "id": 134,
+            "product_id": 2,
+            "shop_id": 12,
+            "price": 56
+        },
+        {
+            "id": 135,
+            "product_id": 3,
+            "shop_id": 12,
+            "price": 439
+        },
+        {
+            "id": 136,
+            "product_id": 4,
+            "shop_id": 12,
+            "price": 855
+        },
+        {
+            "id": 137,
+            "product_id": 5,
+            "shop_id": 12,
+            "price": 33
+        },
+        {
+            "id": 138,
+            "product_id": 6,
+            "shop_id": 12,
+            "price": 30
+        },
+        {
+            "id": 139,
+            "product_id": 7,
+            "shop_id": 12,
+            "price": 78
+        },
+        {
+            "id": 140,
+            "product_id": 8,
+            "shop_id": 12,
+            "price": 497
+        },
+        {
+            "id": 141,
+            "product_id": 9,
+            "shop_id": 12,
+            "price": 18
+        },
+        {
+            "id": 142,
+            "product_id": 10,
+            "shop_id": 12,
+            "price": 47
+        },
+        {
+            "id": 143,
+            "product_id": 11,
+            "shop_id": 12,
+            "price": 125
+        },
+        {
+            "id": 144,
+            "product_id": 12,
+            "shop_id": 12,
+            "price": 231
+        },
+        {
+            "id": 145,
+            "product_id": 1,
+            "shop_id": 13,
+            "price": 793
+        },
+        {
+            "id": 146,
+            "product_id": 2,
+            "shop_id": 13,
+            "price": 69
+        },
+        {
+            "id": 147,
+            "product_id": 3,
+            "shop_id": 13,
+            "price": 492
+        },
+        {
+            "id": 148,
+            "product_id": 4,
+            "shop_id": 13,
+            "price": 927
+        },
+        {
+            "id": 149,
+            "product_id": 5,
+            "shop_id": 13,
+            "price": 44
+        },
+        {
+            "id": 150,
+            "product_id": 6,
+            "shop_id": 13,
+            "price": 68
+        },
+        {
+            "id": 151,
+            "product_id": 7,
+            "shop_id": 13,
+            "price": 60
+        },
+        {
+            "id": 152,
+            "product_id": 8,
+            "shop_id": 13,
+            "price": 188
+        },
+        {
+            "id": 153,
+            "product_id": 9,
+            "shop_id": 13,
+            "price": 30
+        },
+        {
+            "id": 154,
+            "product_id": 10,
+            "shop_id": 13,
+            "price": 14
+        },
+        {
+            "id": 155,
+            "product_id": 11,
+            "shop_id": 13,
+            "price": 155
+        },
+        {
+            "id": 156,
+            "product_id": 12,
+            "shop_id": 13,
+            "price": 235
+        },
+        {
+            "id": 157,
+            "product_id": 1,
+            "shop_id": 14,
+            "price": 678
+        },
+        {
+            "id": 158,
+            "product_id": 2,
+            "shop_id": 14,
+            "price": 64
+        },
+        {
+            "id": 159,
+            "product_id": 3,
+            "shop_id": 14,
+            "price": 465
+        },
+        {
+            "id": 160,
+            "product_id": 4,
+            "shop_id": 14,
+            "price": 807
+        },
+        {
+            "id": 161,
+            "product_id": 5,
+            "shop_id": 14,
+            "price": 39
+        },
+        {
+            "id": 162,
+            "product_id": 6,
+            "shop_id": 14,
+            "price": 63
+        },
+        {
+            "id": 163,
+            "product_id": 7,
+            "shop_id": 14,
+            "price": 56
+        },
+        {
+            "id": 164,
+            "product_id": 8,
+            "shop_id": 14,
+            "price": 140
+        },
+        {
+            "id": 165,
+            "product_id": 9,
+            "shop_id": 14,
+            "price": 25
+        },
+        {
+            "id": 166,
+            "product_id": 10,
+            "shop_id": 14,
+            "price": 14
+        },
+        {
+            "id": 167,
+            "product_id": 11,
+            "shop_id": 14,
+            "price": 131
+        },
+        {
+            "id": 168,
+            "product_id": 12,
+            "shop_id": 14,
+            "price": 225
+        },
+        {
+            "id": 169,
+            "product_id": 1,
+            "shop_id": 15,
+            "price": 737
+        },
+        {
+            "id": 170,
+            "product_id": 2,
+            "shop_id": 15,
+            "price": 66
+        },
+        {
+            "id": 171,
+            "product_id": 3,
+            "shop_id": 15,
+            "price": 482
+        },
+        {
+            "id": 172,
+            "product_id": 4,
+            "shop_id": 15,
+            "price": 874
+        },
+        {
+            "id": 173,
+            "product_id": 5,
+            "shop_id": 15,
+            "price": 41
+        },
+        {
+            "id": 174,
+            "product_id": 6,
+            "shop_id": 15,
+            "price": 65
+        },
+        {
+            "id": 175,
+            "product_id": 7,
+            "shop_id": 15,
+            "price": 58
+        },
+        {
+            "id": 176,
+            "product_id": 8,
+            "shop_id": 15,
+            "price": 161
+        },
+        {
+            "id": 177,
+            "product_id": 9,
+            "shop_id": 15,
+            "price": 27
+        },
+        {
+            "id": 178,
+            "product_id": 10,
+            "shop_id": 15,
+            "price": 12
+        },
+        {
+            "id": 179,
+            "product_id": 11,
+            "shop_id": 15,
+            "price": 144
+        },
+        {
+            "id": 180,
+            "product_id": 12,
+            "shop_id": 15,
+            "price": 230
+        },
+        {
+            "id": 181,
+            "product_id": 1,
+            "shop_id": 16,
+            "price": 160
+        },
+        {
+            "id": 182,
+            "product_id": 2,
+            "shop_id": 16,
+            "price": 60
+        },
+        {
+            "id": 183,
+            "product_id": 3,
+            "shop_id": 16,
+            "price": 557
+        },
+        {
+            "id": 184,
+            "product_id": 4,
+            "shop_id": 16,
+            "price": 795
+        },
+        {
+            "id": 185,
+            "product_id": 5,
+            "shop_id": 16,
+            "price": 33
+        },
+        {
+            "id": 186,
+            "product_id": 6,
+            "shop_id": 16,
+            "price": 57
+        },
+        {
+            "id": 187,
+            "product_id": 7,
+            "shop_id": 16,
+            "price": 58
+        },
+        {
+            "id": 188,
+            "product_id": 8,
+            "shop_id": 16,
+            "price": 389
+        },
+        {
+            "id": 189,
+            "product_id": 9,
+            "shop_id": 16,
+            "price": 19
+        },
+        {
+            "id": 190,
+            "product_id": 10,
+            "shop_id": 16,
+            "price": 37
+        },
+        {
+            "id": 191,
+            "product_id": 11,
+            "shop_id": 16,
+            "price": 126
+        },
+        {
+            "id": 192,
+            "product_id": 12,
+            "shop_id": 16,
+            "price": 271
+        },
+        {
+            "id": 193,
+            "product_id": 1,
+            "shop_id": 17,
+            "price": 452
+        },
+        {
+            "id": 194,
+            "product_id": 2,
+            "shop_id": 17,
+            "price": 49
+        },
+        {
+            "id": 195,
+            "product_id": 3,
+            "shop_id": 17,
+            "price": 442
+        },
+        {
+            "id": 196,
+            "product_id": 4,
+            "shop_id": 17,
+            "price": 512
+        },
+        {
+            "id": 197,
+            "product_id": 5,
+            "shop_id": 17,
+            "price": 23
+        },
+        {
+            "id": 198,
+            "product_id": 6,
+            "shop_id": 17,
+            "price": 47
+        },
+        {
+            "id": 199,
+            "product_id": 7,
+            "shop_id": 17,
+            "price": 61
+        },
+        {
+            "id": 200,
+            "product_id": 8,
+            "shop_id": 17,
+            "price": 336
+        },
+        {
+            "id": 201,
+            "product_id": 9,
+            "shop_id": 17,
+            "price": 8
+        },
+        {
+            "id": 202,
+            "product_id": 10,
+            "shop_id": 17,
+            "price": 32
+        },
+        {
+            "id": 203,
+            "product_id": 11,
+            "shop_id": 17,
+            "price": 74
+        },
+        {
+            "id": 204,
+            "product_id": 12,
+            "shop_id": 17,
+            "price": 223
+        },
+        {
+            "id": 205,
+            "product_id": 1,
+            "shop_id": 18,
+            "price": 567
+        },
+        {
+            "id": 206,
+            "product_id": 2,
+            "shop_id": 18,
+            "price": 44
+        },
+        {
+            "id": 207,
+            "product_id": 3,
+            "shop_id": 18,
+            "price": 416
+        },
+        {
+            "id": 208,
+            "product_id": 4,
+            "shop_id": 18,
+            "price": 597
+        },
+        {
+            "id": 209,
+            "product_id": 5,
+            "shop_id": 18,
+            "price": 21
+        },
+        {
+            "id": 210,
+            "product_id": 6,
+            "shop_id": 18,
+            "price": 40
+        },
+        {
+            "id": 211,
+            "product_id": 7,
+            "shop_id": 18,
+            "price": 68
+        },
+        {
+            "id": 212,
+            "product_id": 8,
+            "shop_id": 18,
+            "price": 389
+        },
+        {
+            "id": 213,
+            "product_id": 9,
+            "shop_id": 18,
+            "price": 6
+        },
+        {
+            "id": 214,
+            "product_id": 10,
+            "shop_id": 18,
+            "price": 38
+        },
+        {
+            "id": 215,
+            "product_id": 11,
+            "shop_id": 18,
+            "price": 68
+        },
+        {
+            "id": 216,
+            "product_id": 12,
+            "shop_id": 18,
+            "price": 216
+        },
+        {
+            "id": 217,
+            "product_id": 1,
+            "shop_id": 19,
+            "price": 582
+        },
+        {
+            "id": 218,
+            "product_id": 2,
+            "shop_id": 19,
+            "price": 51
+        },
+        {
+            "id": 219,
+            "product_id": 3,
+            "shop_id": 19,
+            "price": 394
+        },
+        {
+            "id": 220,
+            "product_id": 4,
+            "shop_id": 19,
+            "price": 537
+        },
+        {
+            "id": 221,
+            "product_id": 5,
+            "shop_id": 19,
+            "price": 23
+        },
+        {
+            "id": 222,
+            "product_id": 6,
+            "shop_id": 19,
+            "price": 43
+        },
+        {
+            "id": 223,
+            "product_id": 7,
+            "shop_id": 19,
+            "price": 65
+        },
+        {
+            "id": 224,
+            "product_id": 8,
+            "shop_id": 19,
+            "price": 302
+        },
+        {
+            "id": 225,
+            "product_id": 9,
+            "shop_id": 19,
+            "price": 10
+        },
+        {
+            "id": 226,
+            "product_id": 10,
+            "shop_id": 19,
+            "price": 30
+        },
+        {
+            "id": 227,
+            "product_id": 11,
+            "shop_id": 19,
+            "price": 76
+        },
+        {
+            "id": 228,
+            "product_id": 12,
+            "shop_id": 19,
+            "price": 205
+        },
+        {
+            "id": 229,
+            "product_id": 1,
+            "shop_id": 20,
+            "price": 585
+        },
+        {
+            "id": 230,
+            "product_id": 2,
+            "shop_id": 20,
+            "price": 49
+        },
+        {
+            "id": 231,
+            "product_id": 3,
+            "shop_id": 20,
+            "price": 384
+        },
+        {
+            "id": 232,
+            "product_id": 4,
+            "shop_id": 20,
+            "price": 486
+        },
+        {
+            "id": 233,
+            "product_id": 5,
+            "shop_id": 20,
+            "price": 25
+        },
+        {
+            "id": 234,
+            "product_id": 6,
+            "shop_id": 20,
+            "price": 47
+        },
+        {
+            "id": 235,
+            "product_id": 7,
+            "shop_id": 20,
+            "price": 63
+        },
+        {
+            "id": 236,
+            "product_id": 8,
+            "shop_id": 20,
+            "price": 309
+        },
+        {
+            "id": 237,
+            "product_id": 9,
+            "shop_id": 20,
+            "price": 12
+        },
+        {
+            "id": 238,
+            "product_id": 10,
+            "shop_id": 20,
+            "price": 30
+        },
+        {
+            "id": 239,
+            "product_id": 11,
+            "shop_id": 20,
+            "price": 68
+        },
+        {
+            "id": 240,
+            "product_id": 12,
+            "shop_id": 20,
+            "price": 198
+        },
+        {
+            "id": 241,
+            "product_id": 1,
+            "shop_id": 21,
+            "price": 551
+        },
+        {
+            "id": 242,
+            "product_id": 2,
+            "shop_id": 21,
+            "price": 51
+        },
+        {
+            "id": 243,
+            "product_id": 3,
+            "shop_id": 21,
+            "price": 398
+        },
+        {
+            "id": 244,
+            "product_id": 4,
+            "shop_id": 21,
+            "price": 461
+        },
+        {
+            "id": 245,
+            "product_id": 5,
+            "shop_id": 21,
+            "price": 27
+        },
+        {
+            "id": 246,
+            "product_id": 6,
+            "shop_id": 21,
+            "price": 48
+        },
+        {
+            "id": 247,
+            "product_id": 7,
+            "shop_id": 21,
+            "price": 61
+        },
+        {
+            "id": 248,
+            "product_id": 8,
+            "shop_id": 21,
+            "price": 297
+        },
+        {
+            "id": 249,
+            "product_id": 9,
+            "shop_id": 21,
+            "price": 12
+        },
+        {
+            "id": 250,
+            "product_id": 10,
+            "shop_id": 21,
+            "price": 28
+        },
+        {
+            "id": 251,
+            "product_id": 11,
+            "shop_id": 21,
+            "price": 62
+        },
+        {
+            "id": 252,
+            "product_id": 12,
+            "shop_id": 21,
+            "price": 202
+        },
+        {
+            "id": 253,
+            "product_id": 1,
+            "shop_id": 22,
+            "price": 522
+        },
+        {
+            "id": 254,
+            "product_id": 2,
+            "shop_id": 22,
+            "price": 49
+        },
+        {
+            "id": 255,
+            "product_id": 3,
+            "shop_id": 22,
+            "price": 409
+        },
+        {
+            "id": 256,
+            "product_id": 4,
+            "shop_id": 22,
+            "price": 450
+        },
+        {
+            "id": 257,
+            "product_id": 5,
+            "shop_id": 22,
+            "price": 25
+        },
+        {
+            "id": 258,
+            "product_id": 6,
+            "shop_id": 22,
+            "price": 47
+        },
+        {
+            "id": 259,
+            "product_id": 7,
+            "shop_id": 22,
+            "price": 61
+        },
+        {
+            "id": 260,
+            "product_id": 8,
+            "shop_id": 22,
+            "price": 308
+        },
+        {
+            "id": 261,
+            "product_id": 9,
+            "shop_id": 22,
+            "price": 10
+        },
+        {
+            "id": 262,
+            "product_id": 10,
+            "shop_id": 22,
+            "price": 30
+        },
+        {
+            "id": 263,
+            "product_id": 11,
+            "shop_id": 22,
+            "price": 60
+        },
+        {
+            "id": 264,
+            "product_id": 12,
+            "shop_id": 22,
+            "price": 208
+        },
+        {
+            "id": 265,
+            "product_id": 1,
+            "shop_id": 23,
+            "price": 501
+        },
+        {
+            "id": 266,
+            "product_id": 2,
+            "shop_id": 23,
+            "price": 45
+        },
+        {
+            "id": 267,
+            "product_id": 3,
+            "shop_id": 23,
+            "price": 436
+        },
+        {
+            "id": 268,
+            "product_id": 4,
+            "shop_id": 23,
+            "price": 575
+        },
+        {
+            "id": 269,
+            "product_id": 5,
+            "shop_id": 23,
+            "price": 20
+        },
+        {
+            "id": 270,
+            "product_id": 6,
+            "shop_id": 23,
+            "price": 43
+        },
+        {
+            "id": 271,
+            "product_id": 7,
+            "shop_id": 23,
+            "price": 65
+        },
+        {
+            "id": 272,
+            "product_id": 8,
+            "shop_id": 23,
+            "price": 378
+        },
+        {
+            "id": 273,
+            "product_id": 9,
+            "shop_id": 23,
+            "price": 5
+        },
+        {
+            "id": 274,
+            "product_id": 10,
+            "shop_id": 23,
+            "price": 37
+        },
+        {
+            "id": 275,
+            "product_id": 11,
+            "shop_id": 23,
+            "price": 60
+        },
+        {
+            "id": 276,
+            "product_id": 12,
+            "shop_id": 23,
+            "price": 223
+        },
+        {
+            "id": 277,
+            "product_id": 1,
+            "shop_id": 25,
+            "price": 505
+        },
+        {
+            "id": 278,
+            "product_id": 2,
+            "shop_id": 25,
+            "price": 45
+        },
+        {
+            "id": 279,
+            "product_id": 3,
+            "shop_id": 25,
+            "price": 437
+        },
+        {
+            "id": 280,
+            "product_id": 4,
+            "shop_id": 25,
+            "price": 583
+        },
+        {
+            "id": 281,
+            "product_id": 5,
+            "shop_id": 25,
+            "price": 20
+        },
+        {
+            "id": 282,
+            "product_id": 6,
+            "shop_id": 25,
+            "price": 41
+        },
+        {
+            "id": 283,
+            "product_id": 7,
+            "shop_id": 25,
+            "price": 65
+        },
+        {
+            "id": 284,
+            "product_id": 8,
+            "shop_id": 25,
+            "price": 382
+        },
+        {
+            "id": 285,
+            "product_id": 9,
+            "shop_id": 25,
+            "price": 5
+        },
+        {
+            "id": 286,
+            "product_id": 10,
+            "shop_id": 25,
+            "price": 37
+        },
+        {
+            "id": 287,
+            "product_id": 11,
+            "shop_id": 25,
+            "price": 60
+        },
+        {
+            "id": 288,
+            "product_id": 12,
+            "shop_id": 25,
+            "price": 225
+        },
+        {
+            "id": 289,
+            "product_id": 1,
+            "shop_id": 26,
+            "price": 505
+        },
+        {
+            "id": 290,
+            "product_id": 2,
+            "shop_id": 26,
+            "price": 45
+        },
+        {
+            "id": 291,
+            "product_id": 3,
+            "shop_id": 26,
+            "price": 437
+        },
+        {
+            "id": 292,
+            "product_id": 4,
+            "shop_id": 26,
+            "price": 583
+        },
+        {
+            "id": 293,
+            "product_id": 5,
+            "shop_id": 26,
+            "price": 20
+        },
+        {
+            "id": 294,
+            "product_id": 6,
+            "shop_id": 26,
+            "price": 41
+        },
+        {
+            "id": 295,
+            "product_id": 7,
+            "shop_id": 26,
+            "price": 65
+        },
+        {
+            "id": 296,
+            "product_id": 8,
+            "shop_id": 26,
+            "price": 382
+        },
+        {
+            "id": 297,
+            "product_id": 9,
+            "shop_id": 26,
+            "price": 5
+        },
+        {
+            "id": 298,
+            "product_id": 10,
+            "shop_id": 26,
+            "price": 37
+        },
+        {
+            "id": 299,
+            "product_id": 11,
+            "shop_id": 26,
+            "price": 60
+        },
+        {
+            "id": 300,
+            "product_id": 12,
+            "shop_id": 26,
+            "price": 225
+        },
+        {
+            "id": 301,
+            "product_id": 1,
+            "shop_id": 27,
+            "price": 505
+        },
+        {
+            "id": 302,
+            "product_id": 2,
+            "shop_id": 27,
+            "price": 45
+        },
+        {
+            "id": 303,
+            "product_id": 3,
+            "shop_id": 27,
+            "price": 437
+        },
+        {
+            "id": 304,
+            "product_id": 4,
+            "shop_id": 27,
+            "price": 583
+        },
+        {
+            "id": 305,
+            "product_id": 5,
+            "shop_id": 27,
+            "price": 20
+        },
+        {
+            "id": 306,
+            "product_id": 6,
+            "shop_id": 27,
+            "price": 41
+        },
+        {
+            "id": 307,
+            "product_id": 7,
+            "shop_id": 27,
+            "price": 65
+        },
+        {
+            "id": 308,
+            "product_id": 8,
+            "shop_id": 27,
+            "price": 382
+        },
+        {
+            "id": 309,
+            "product_id": 9,
+            "shop_id": 27,
+            "price": 5
+        },
+        {
+            "id": 310,
+            "product_id": 10,
+            "shop_id": 27,
+            "price": 37
+        },
+        {
+            "id": 311,
+            "product_id": 11,
+            "shop_id": 27,
+            "price": 60
+        },
+        {
+            "id": 312,
+            "product_id": 12,
+            "shop_id": 27,
+            "price": 225
+        },
+        {
+            "id": 313,
+            "product_id": 1,
+            "shop_id": 28,
+            "price": 505
+        },
+        {
+            "id": 314,
+            "product_id": 2,
+            "shop_id": 28,
+            "price": 45
+        },
+        {
+            "id": 315,
+            "product_id": 3,
+            "shop_id": 28,
+            "price": 437
+        },
+        {
+            "id": 316,
+            "product_id": 4,
+            "shop_id": 28,
+            "price": 583
+        },
+        {
+            "id": 317,
+            "product_id": 5,
+            "shop_id": 28,
+            "price": 20
+        },
+        {
+            "id": 318,
+            "product_id": 6,
+            "shop_id": 28,
+            "price": 41
+        },
+        {
+            "id": 319,
+            "product_id": 7,
+            "shop_id": 28,
+            "price": 65
+        },
+        {
+            "id": 320,
+            "product_id": 8,
+            "shop_id": 28,
+            "price": 382
+        },
+        {
+            "id": 321,
+            "product_id": 9,
+            "shop_id": 28,
+            "price": 5
+        },
+        {
+            "id": 322,
+            "product_id": 10,
+            "shop_id": 28,
+            "price": 37
+        },
+        {
+            "id": 323,
+            "product_id": 11,
+            "shop_id": 28,
+            "price": 60
+        },
+        {
+            "id": 324,
+            "product_id": 12,
+            "shop_id": 28,
+            "price": 225
+        },
+        {
+            "id": 325,
+            "product_id": 1,
+            "shop_id": 29,
+            "price": 460
+        },
+        {
+            "id": 326,
+            "product_id": 2,
+            "shop_id": 29,
+            "price": 51
+        },
+        {
+            "id": 327,
+            "product_id": 3,
+            "shop_id": 29,
+            "price": 436
+        },
+        {
+            "id": 328,
+            "product_id": 4,
+            "shop_id": 29,
+            "price": 489
+        },
+        {
+            "id": 329,
+            "product_id": 5,
+            "shop_id": 29,
+            "price": 25
+        },
+        {
+            "id": 330,
+            "product_id": 6,
+            "shop_id": 29,
+            "price": 50
+        },
+        {
+            "id": 331,
+            "product_id": 7,
+            "shop_id": 29,
+            "price": 58
+        },
+        {
+            "id": 332,
+            "product_id": 8,
+            "shop_id": 29,
+            "price": 302
+        },
+        {
+            "id": 333,
+            "product_id": 9,
+            "shop_id": 29,
+            "price": 10
+        },
+        {
+            "id": 334,
+            "product_id": 10,
+            "shop_id": 29,
+            "price": 30
+        },
+        {
+            "id": 335,
+            "product_id": 11,
+            "shop_id": 29,
+            "price": 68
+        },
+        {
+            "id": 336,
+            "product_id": 12,
+            "shop_id": 29,
+            "price": 219
+        },
+        {
+            "id": 337,
+            "product_id": 1,
+            "shop_id": 30,
+            "price": 410
+        },
+        {
+            "id": 338,
+            "product_id": 2,
+            "shop_id": 30,
+            "price": 51
+        },
+        {
+            "id": 339,
+            "product_id": 3,
+            "shop_id": 30,
+            "price": 458
+        },
+        {
+            "id": 340,
+            "product_id": 4,
+            "shop_id": 30,
+            "price": 547
+        },
+        {
+            "id": 341,
+            "product_id": 5,
+            "shop_id": 30,
+            "price": 24
+        },
+        {
+            "id": 342,
+            "product_id": 6,
+            "shop_id": 30,
+            "price": 48
+        },
+        {
+            "id": 343,
+            "product_id": 7,
+            "shop_id": 30,
+            "price": 60
+        },
+        {
+            "id": 344,
+            "product_id": 8,
+            "shop_id": 30,
+            "price": 337
+        },
+        {
+            "id": 345,
+            "product_id": 9,
+            "shop_id": 30,
+            "price": 9
+        },
+        {
+            "id": 346,
+            "product_id": 10,
+            "shop_id": 30,
+            "price": 32
+        },
+        {
+            "id": 347,
+            "product_id": 11,
+            "shop_id": 30,
+            "price": 81
+        },
+        {
+            "id": 348,
+            "product_id": 12,
+            "shop_id": 30,
+            "price": 230
+        },
+        {
+            "id": 349,
+            "product_id": 1,
+            "shop_id": 31,
+            "price": 410
+        },
+        {
+            "id": 350,
+            "product_id": 2,
+            "shop_id": 31,
+            "price": 51
+        },
+        {
+            "id": 351,
+            "product_id": 3,
+            "shop_id": 31,
+            "price": 458
+        },
+        {
+            "id": 352,
+            "product_id": 4,
+            "shop_id": 31,
+            "price": 547
+        },
+        {
+            "id": 353,
+            "product_id": 5,
+            "shop_id": 31,
+            "price": 24
+        },
+        {
+            "id": 354,
+            "product_id": 6,
+            "shop_id": 31,
+            "price": 48
+        },
+        {
+            "id": 355,
+            "product_id": 7,
+            "shop_id": 31,
+            "price": 60
+        },
+        {
+            "id": 356,
+            "product_id": 8,
+            "shop_id": 31,
+            "price": 337
+        },
+        {
+            "id": 357,
+            "product_id": 9,
+            "shop_id": 31,
+            "price": 9
+        },
+        {
+            "id": 358,
+            "product_id": 10,
+            "shop_id": 31,
+            "price": 32
+        },
+        {
+            "id": 359,
+            "product_id": 11,
+            "shop_id": 31,
+            "price": 81
+        },
+        {
+            "id": 360,
+            "product_id": 12,
+            "shop_id": 31,
+            "price": 230
+        },
+        {
+            "id": 361,
+            "product_id": 1,
+            "shop_id": 32,
+            "price": 394
+        },
+        {
+            "id": 362,
+            "product_id": 2,
+            "shop_id": 32,
+            "price": 59
+        },
+        {
+            "id": 363,
+            "product_id": 3,
+            "shop_id": 32,
+            "price": 498
+        },
+        {
+            "id": 364,
+            "product_id": 4,
+            "shop_id": 32,
+            "price": 697
+        },
+        {
+            "id": 365,
+            "product_id": 5,
+            "shop_id": 32,
+            "price": 33
+        },
+        {
+            "id": 366,
+            "product_id": 6,
+            "shop_id": 32,
+            "price": 57
+        },
+        {
+            "id": 367,
+            "product_id": 7,
+            "shop_id": 32,
+            "price": 51
+        },
+        {
+            "id": 368,
+            "product_id": 8,
+            "shop_id": 32,
+            "price": 278
+        },
+        {
+            "id": 369,
+            "product_id": 9,
+            "shop_id": 32,
+            "price": 19
+        },
+        {
+            "id": 370,
+            "product_id": 10,
+            "shop_id": 32,
+            "price": 27
+        },
+        {
+            "id": 371,
+            "product_id": 11,
+            "shop_id": 32,
+            "price": 109
+        },
+        {
+            "id": 372,
+            "product_id": 12,
+            "shop_id": 32,
+            "price": 242
+        },
+        {
+            "id": 373,
+            "product_id": 1,
+            "shop_id": 33,
+            "price": 498
+        },
+        {
+            "id": 374,
+            "product_id": 2,
+            "shop_id": 33,
+            "price": 66
+        },
+        {
+            "id": 375,
+            "product_id": 3,
+            "shop_id": 33,
+            "price": 547
+        },
+        {
+            "id": 376,
+            "product_id": 4,
+            "shop_id": 33,
+            "price": 858
+        },
+        {
+            "id": 377,
+            "product_id": 5,
+            "shop_id": 33,
+            "price": 40
+        },
+        {
+            "id": 378,
+            "product_id": 6,
+            "shop_id": 33,
+            "price": 66
+        },
+        {
+            "id": 379,
+            "product_id": 7,
+            "shop_id": 33,
+            "price": 45
+        },
+        {
+            "id": 380,
+            "product_id": 8,
+            "shop_id": 33,
+            "price": 268
+        },
+        {
+            "id": 381,
+            "product_id": 9,
+            "shop_id": 33,
+            "price": 26
+        },
+        {
+            "id": 382,
+            "product_id": 10,
+            "shop_id": 33,
+            "price": 24
+        },
+        {
+            "id": 383,
+            "product_id": 11,
+            "shop_id": 33,
+            "price": 141
+        },
+        {
+            "id": 384,
+            "product_id": 12,
+            "shop_id": 33,
+            "price": 262
+        },
+        {
+            "id": 385,
+            "product_id": 1,
+            "shop_id": 34,
+            "price": 435
+        },
+        {
+            "id": 386,
+            "product_id": 2,
+            "shop_id": 34,
+            "price": 61
+        },
+        {
+            "id": 387,
+            "product_id": 3,
+            "shop_id": 34,
+            "price": 515
+        },
+        {
+            "id": 388,
+            "product_id": 4,
+            "shop_id": 34,
+            "price": 761
+        },
+        {
+            "id": 389,
+            "product_id": 5,
+            "shop_id": 34,
+            "price": 35
+        },
+        {
+            "id": 390,
+            "product_id": 6,
+            "shop_id": 34,
+            "price": 62
+        },
+        {
+            "id": 391,
+            "product_id": 7,
+            "shop_id": 34,
+            "price": 48
+        },
+        {
+            "id": 392,
+            "product_id": 8,
+            "shop_id": 34,
+            "price": 268
+        },
+        {
+            "id": 393,
+            "product_id": 9,
+            "shop_id": 34,
+            "price": 21
+        },
+        {
+            "id": 394,
+            "product_id": 10,
+            "shop_id": 34,
+            "price": 26
+        },
+        {
+            "id": 395,
+            "product_id": 11,
+            "shop_id": 34,
+            "price": 122
+        },
+        {
+            "id": 396,
+            "product_id": 12,
+            "shop_id": 34,
+            "price": 249
+        },
+        {
+            "id": 397,
+            "product_id": 1,
+            "shop_id": 35,
+            "price": 452
+        },
+        {
+            "id": 398,
+            "product_id": 2,
+            "shop_id": 35,
+            "price": 64
+        },
+        {
+            "id": 399,
+            "product_id": 3,
+            "shop_id": 35,
+            "price": 542
+        },
+        {
+            "id": 400,
+            "product_id": 4,
+            "shop_id": 35,
+            "price": 827
+        },
+        {
+            "id": 401,
+            "product_id": 5,
+            "shop_id": 35,
+            "price": 38
+        },
+        {
+            "id": 402,
+            "product_id": 6,
+            "shop_id": 35,
+            "price": 64
+        },
+        {
+            "id": 403,
+            "product_id": 7,
+            "shop_id": 35,
+            "price": 46
+        },
+        {
+            "id": 404,
+            "product_id": 8,
+            "shop_id": 35,
+            "price": 278
+        },
+        {
+            "id": 405,
+            "product_id": 9,
+            "shop_id": 35,
+            "price": 24
+        },
+        {
+            "id": 406,
+            "product_id": 10,
+            "shop_id": 35,
+            "price": 26
+        },
+        {
+            "id": 407,
+            "product_id": 11,
+            "shop_id": 35,
+            "price": 136
+        },
+        {
+            "id": 408,
+            "product_id": 12,
+            "shop_id": 35,
+            "price": 260
+        }
+];
+
+function buildTableData() {
+  const rows = [];
+
+  productShops.forEach(ps => {
+    const product = products.find(p => p.id === ps.product_id);
+    const shop = shops.find(s => s.id === ps.shop_id);
+    const system = systems.find(sys => sys.id === shop.system_id);
+    const category = categories.find(c => c.id === product.category_id);
+
+	//  FILTER LOGIC
+	if (activeSystems.size > 0 && !activeSystems.has(system.id)) return;
+	if (activeProducts.size > 0 && !activeProducts.has(product.id)) return;
+
+    rows.push([
+      system.name,
+      shop.name,
+      product.name,
+      category.name,
+      category.size,
+      ps.price,
+      category.size * ps.price
+    ]);
+  });
+
+  return rows;
+}
+
+const headers = [
+  { title: "System" },
+  { title: "Shop" },
+  { title: "Product" },
+  { title: "Category" },
+  { title: "Unit Size" },
+  { title: "Price" },
+  { title: "Total" }  
+];
+
+function reloadTable() {
+  const rows = buildTableData();
+
+  if ($.fn.dataTable.isDataTable('#dataTable')) {
+    $('#dataTable').DataTable().destroy();
+    $('#dataTable').empty();
+  }
+
+  $('#dataTable').DataTable({
+    data: rows,
+    columns: headers,
+    paging: false
+  });
+}
+
+
+function renderFilters() {
+  // Systems
+  const sysContainer = document.getElementById("systemFilters");
+  sysContainer.innerHTML = "";
+
+  systems.forEach(s => {
+    const el = document.createElement("label");
+    el.innerHTML = `
+      <input type="checkbox" value="${s.id}" onchange="toggleSystem(${s.id})">
+      ${s.name}
+    `;
+    sysContainer.appendChild(el);
+  });
+
+  // Products
+  const prodContainer = document.getElementById("productFilters");
+  prodContainer.innerHTML = "";
+
+  products.forEach(p => {
+    const el = document.createElement("label");
+    el.innerHTML = `
+      <input type="checkbox" value="${p.id}" onchange="toggleProduct(${p.id})">
+      ${p.name}
+    `;
+    prodContainer.appendChild(el);
+  });
+}
+function toggleSystem(id) {
+  if (activeSystems.has(id)) {
+    activeSystems.delete(id);
+  } else {
+    activeSystems.add(id);
+  }
+  reloadTable();
+}
+
+function toggleProduct(id) {
+  if (activeProducts.has(id)) {
+    activeProducts.delete(id);
+  } else {
+    activeProducts.add(id);
+  }
+  reloadTable();
+}
+
+function resetSystems() {
+  activeSystems.clear();
+  document.querySelectorAll("#systemFilters input").forEach(i => i.checked = false);
+  reloadTable();
+}
+
+function resetProducts() {
+  activeProducts.clear();
+  document.querySelectorAll("#productFilters input").forEach(i => i.checked = false);
+  reloadTable();
+}
+
+window.onload = function() {
+  renderFilters();
+  reloadTable();
+};
+</script>
+
+</body>
+</html>
